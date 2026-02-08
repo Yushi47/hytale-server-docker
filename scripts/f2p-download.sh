@@ -260,12 +260,28 @@ JAR_URL="${HYTALE_F2P_DOWNLOAD_BASE}/HytaleServer.jar"
 if needs_update "${JAR_URL}" "${HYTALE_SERVER_JAR}" "HytaleServer.jar"; then
   if download_file "${JAR_URL}" "${HYTALE_SERVER_JAR}" "HytaleServer.jar" "80"; then
     save_version "${JAR_URL}" "HytaleServer.jar"
-    # Clear dual auth flag so patcher re-verifies the new JAR
-    rm -f "${SERVER_DIR}/.patched_dual_auth" 2>/dev/null || true
   else
     log "ERROR: Failed to download HytaleServer.jar"
     log "ERROR: Check if ${JAR_URL} is accessible"
     exit 1
+  fi
+fi
+
+# Download DualAuth Agent JAR if missing or outdated
+DUALAUTH_AGENT_JAR="/opt/dualauth-agent/dualauth-agent.jar"
+DUALAUTH_AGENT_LOCAL="${SERVER_DIR}/dualauth-agent.jar"
+DUALAUTH_AGENT_URL="https://github.com/sanasol/hytale-auth-server/releases/latest/download/dualauth-agent.jar"
+if [ ! -f "${DUALAUTH_AGENT_JAR}" ] && [ ! -f "${DUALAUTH_AGENT_LOCAL}" ]; then
+  log "F2P download: DualAuth Agent not found, downloading from GitHub releases..."
+  if download_file "${DUALAUTH_AGENT_URL}" "${DUALAUTH_AGENT_LOCAL}" "dualauth-agent.jar" "5"; then
+    save_version "${DUALAUTH_AGENT_URL}" "dualauth-agent.jar"
+    log "F2P download: DualAuth Agent downloaded to ${DUALAUTH_AGENT_LOCAL}"
+  else
+    log "WARNING: Failed to download DualAuth Agent (server will start without dual auth)"
+  fi
+elif needs_update "${DUALAUTH_AGENT_URL}" "${DUALAUTH_AGENT_LOCAL}" "dualauth-agent.jar" 2>/dev/null; then
+  if download_file "${DUALAUTH_AGENT_URL}" "${DUALAUTH_AGENT_LOCAL}" "dualauth-agent.jar" "5"; then
+    save_version "${DUALAUTH_AGENT_URL}" "dualauth-agent.jar"
   fi
 fi
 

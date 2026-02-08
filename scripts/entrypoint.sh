@@ -275,25 +275,35 @@ export DATA_DIR SERVER_DIR HYTALE_F2P_DOWNLOAD_BASE HYTALE_F2P_AUTO_UPDATE
 
 /usr/local/bin/hytale-prestart-downloads
 
-# Dual Authentication Mode
-# Patches the server JAR to support BOTH hytale.com (official) AND sanasol.ws (F2P) authentication
-# This enables:
+# DualAuth ByteBuddy Agent
+# Runtime patching via -javaagent: flag (no JAR modification needed)
+# The agent intercepts auth classes at load time to enable:
 # - TRUE dual auth: both official and F2P clients can join the same server
 # - /auth login device flow uses OFFICIAL hytale.com (unchanged)
-# - F2P server tokens auto-fetched from sanasol.ws on startup
+# - F2P server tokens auto-fetched from configured domain on startup
 # - JWKS loaded from BOTH backends and merged
 # - Token routing based on player's token issuer
-# - Dual server identity tokens for server authentication
-if is_true "${HYTALE_DUAL_AUTH:-true}"; then
-  log "Applying dual authentication patch..."
-  log "  Mode: TRUE DUAL AUTH (official + F2P)"
+# - Omni-Auth support for decentralized/self-signed tokens
+# Check for agent JAR: prefer /opt/ (Docker image built-in), fallback to /data/server/ (runtime download)
+DUALAUTH_AGENT_JAR="/opt/dualauth-agent/dualauth-agent.jar"
+if [ ! -f "${DUALAUTH_AGENT_JAR}" ] && [ -f "${SERVER_DIR}/dualauth-agent.jar" ]; then
+  DUALAUTH_AGENT_JAR="${SERVER_DIR}/dualauth-agent.jar"
+fi
+if is_true "${HYTALE_DUAL_AUTH:-true}" && [ -f "${DUALAUTH_AGENT_JAR}" ]; then
+  log "DualAuth Agent: enabled (runtime patching, original JAR untouched)"
+  log "  Mode: TRUE DUAL AUTH (official + F2P + Omni-Auth)"
   log "  Official: hytale.com (/auth login)"
   log "  F2P: ${HYTALE_AUTH_DOMAIN:-auth.sanasol.ws} (auto-fetch)"
-  /usr/local/bin/hytale-patch-dual-auth "${HYTALE_SERVER_JAR}" || log "WARNING: Dual auth patching failed"
+  log "  Trust All Issuers: ${HYTALE_TRUST_ALL_ISSUERS:-true}"
+  DUALAUTH_AGENT_FLAG="-javaagent:${DUALAUTH_AGENT_JAR}"
+elif is_true "${HYTALE_DUAL_AUTH:-true}"; then
+  log "WARNING: DualAuth Agent JAR not found at ${DUALAUTH_AGENT_JAR}"
+  log "WARNING: Server will start without dual authentication"
+  DUALAUTH_AGENT_FLAG=""
+else
+  log "DualAuth Agent: disabled (HYTALE_DUAL_AUTH=false)"
+  DUALAUTH_AGENT_FLAG=""
 fi
-
-# NOTE: Server tokens are auto-fetched by DualServerTokenManager in the patched JAR
-# No need to pre-fetch tokens - the server handles this automatically on startup
 
 /usr/local/bin/hytale-cfg-interpolate
 
@@ -332,6 +342,11 @@ if [ -n "${TZ:-}" ]; then
 fi
 
 set -- java
+
+# Add DualAuth Agent flag if enabled
+if [ -n "${DUALAUTH_AGENT_FLAG:-}" ]; then
+  set -- "$@" "${DUALAUTH_AGENT_FLAG}"
+fi
 
 if [ -n "${JVM_XMS:-}" ]; then
   set -- "$@" "-Xms${JVM_XMS}"

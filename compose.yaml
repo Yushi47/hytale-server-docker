@@ -10,6 +10,9 @@ services:
       # F2P auth configuration (all endpoints derived from domain)
       HYTALE_AUTH_DOMAIN: "auth.sanasol.ws"
       HYTALE_SERVER_NAME: "DedicatedServer"
+      # DualAuth Agent configuration
+      HYTALE_TRUST_ALL_ISSUERS: "true"
+      HYTALE_TRUST_OFFICIAL: "true"
       # Server configuration
       HYFIXES_DISABLE_CHUNK_UNLOAD: "true"
       HYTALE_ACCEPT_EARLY_PLUGINS: "true"

@@ -1,20 +1,13 @@
-# Build stage for compiling the patcher
-FROM eclipse-temurin:25-jdk AS patcher-builder
+# Download DualAuth ByteBuddy Agent from GitHub releases
+FROM eclipse-temurin:25-jdk AS agent-downloader
 
 RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates \
   && rm -rf /var/lib/apt/lists/*
 
-RUN mkdir -p /build/lib
 WORKDIR /build
-
-# Download ASM libraries
-RUN curl -sL "https://repo1.maven.org/maven2/org/ow2/asm/asm/9.6/asm-9.6.jar" -o lib/asm-9.6.jar \
-  && curl -sL "https://repo1.maven.org/maven2/org/ow2/asm/asm-tree/9.6/asm-tree-9.6.jar" -o lib/asm-tree-9.6.jar \
-  && curl -sL "https://repo1.maven.org/maven2/org/ow2/asm/asm-util/9.6/asm-util-9.6.jar" -o lib/asm-util-9.6.jar
-
-# Download DualAuthPatcher from hytale-auth-server (authoritative source)
-RUN curl -sL "https://raw.githubusercontent.com/sanasol/hytale-auth-server/master/patcher/DualAuthPatcher.java" -o DualAuthPatcher.java
-RUN javac -cp "lib/asm-9.6.jar:lib/asm-tree-9.6.jar:lib/asm-util-9.6.jar" -d . DualAuthPatcher.java
+ARG DUALAUTH_AGENT_URL=https://github.com/sanasol/hytale-auth-server/releases/latest/download/dualauth-agent.jar
+RUN curl -sfL "${DUALAUTH_AGENT_URL}" -o dualauth-agent.jar \
+  && java -jar dualauth-agent.jar --version
 
 # Runtime stage
 FROM eclipse-temurin:25-jre
@@ -42,13 +35,10 @@ COPY scripts/curseforge-mods.sh /usr/local/bin/hytale-curseforge-mods
 COPY scripts/prestart-downloads.sh /usr/local/bin/hytale-prestart-downloads
 COPY scripts/hytale-cli.sh /usr/local/bin/hytale-cli
 COPY scripts/healthcheck.sh /usr/local/bin/hytale-healthcheck
-COPY scripts/patch-dual-auth.sh /usr/local/bin/hytale-patch-dual-auth
-RUN chmod 0755 /usr/local/bin/hytale-entrypoint /usr/local/bin/hytale-cfg-interpolate /usr/local/bin/hytale-auto-download /usr/local/bin/hytale-f2p-download /usr/local/bin/hytale-curseforge-mods /usr/local/bin/hytale-prestart-downloads /usr/local/bin/hytale-cli /usr/local/bin/hytale-healthcheck /usr/local/bin/hytale-patch-dual-auth
+RUN chmod 0755 /usr/local/bin/hytale-entrypoint /usr/local/bin/hytale-cfg-interpolate /usr/local/bin/hytale-auto-download /usr/local/bin/hytale-f2p-download /usr/local/bin/hytale-curseforge-mods /usr/local/bin/hytale-prestart-downloads /usr/local/bin/hytale-cli /usr/local/bin/hytale-healthcheck
 
-# Install patcher (pre-compiled from build stage)
-# Copy all class files including any inner classes (DualAuthPatcher$*.class)
-COPY --from=patcher-builder /build/lib /opt/issuer-patcher/lib
-COPY --from=patcher-builder /build/*.class /opt/issuer-patcher/
+# Install DualAuth ByteBuddy Agent (runtime patching, no JAR modification)
+COPY --from=agent-downloader /build/dualauth-agent.jar /opt/dualauth-agent/dualauth-agent.jar
 
 USER hytale
 
