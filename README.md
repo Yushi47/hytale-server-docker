@@ -6,6 +6,8 @@ No official Hytale authentication required - server files are downloaded automat
 
 [![Docker Image](https://img.shields.io/badge/ghcr.io-sanasol%2Fhytale--server--docker-blue)](https://ghcr.io/sanasol/hytale-server-docker)
 
+[TG Group](https://t.me/sanhostnet) | [TG Channel](https://t.me/hf2p_og) | [Community Chat](https://chat.sanhost.net/invite/Tfz4jCK4)
+
 ---
 
 ## Quick Start (F2P Mode - Default)
