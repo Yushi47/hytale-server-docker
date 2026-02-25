@@ -46,5 +46,8 @@ See [hytale-server-docker/pterodactyl/README.md](https://github.com/sanasol/hyta
 
 ## Support
 
-- Discord: https://discord.gg/gME8rUy3MB
+- Telegram Group: https://t.me/sanhostnet
+- Telegram Channel: https://t.me/hf2p_og
+- Community Chat: https://chat.sanhost.net/invite/Tfz4jCK4
+<!-- - Discord: https://discord.gg/gME8rUy3MB -->
 - Issues: https://github.com/sanasol/hytale-server-docker/issues
