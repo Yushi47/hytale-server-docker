@@ -277,17 +277,55 @@ export DATA_DIR SERVER_DIR HYTALE_F2P_DOWNLOAD_BASE HYTALE_F2P_AUTO_UPDATE
 
 # DualAuth ByteBuddy Agent
 # Runtime patching via -javaagent: flag (no JAR modification needed)
-# The agent intercepts auth classes at load time to enable:
-# - TRUE dual auth: both official and F2P clients can join the same server
-# - /auth login device flow uses OFFICIAL hytale.com (unchanged)
-# - F2P server tokens auto-fetched from configured domain on startup
-# - JWKS loaded from BOTH backends and merged
-# - Token routing based on player's token issuer
-# - Omni-Auth support for decentralized/self-signed tokens
-# Check for agent JAR: prefer /opt/ (Docker image built-in), fallback to /data/server/ (runtime download)
-DUALAUTH_AGENT_JAR="/opt/dualauth-agent/dualauth-agent.jar"
-if [ ! -f "${DUALAUTH_AGENT_JAR}" ] && [ -f "${SERVER_DIR}/dualauth-agent.jar" ]; then
-  DUALAUTH_AGENT_JAR="${SERVER_DIR}/dualauth-agent.jar"
+# Auto-update: downloads latest agent from GitHub releases on startup
+
+DUALAUTH_AGENT_AUTO_UPDATE="${HYTALE_AGENT_AUTO_UPDATE:-true}"
+DUALAUTH_AGENT_URL="https://github.com/sanasol/hytale-auth-server/releases/latest/download/dualauth-agent.jar"
+DUALAUTH_VERSION_FILE="${DATA_DIR}/.dualauth-agent-version"
+
+update_dualauth_agent() {
+  local target="${SERVER_DIR}/dualauth-agent.jar"
+  local latest_tag
+
+  # Get latest release tag via redirect
+  latest_tag=$(curl -sfL -o /dev/null -w '%{url_effective}' "https://github.com/sanasol/hytale-auth-server/releases/latest" 2>/dev/null | grep -o '[^/]*$') || return 1
+
+  if [ -z "${latest_tag}" ]; then
+    log "DualAuth Agent: could not determine latest version"
+    return 1
+  fi
+
+  local current_version=""
+  if [ -f "${DUALAUTH_VERSION_FILE}" ]; then
+    current_version=$(cat "${DUALAUTH_VERSION_FILE}" 2>/dev/null) || true
+  fi
+
+  if [ "${latest_tag}" = "${current_version}" ] && [ -f "${target}" ]; then
+    log "DualAuth Agent: up to date (${latest_tag})"
+    return 0
+  fi
+
+  log "DualAuth Agent: updating to ${latest_tag} (current: ${current_version:-none})"
+  if curl -sfL -o "${target}.tmp" "${DUALAUTH_AGENT_URL}"; then
+    mv "${target}.tmp" "${target}"
+    printf '%s\n' "${latest_tag}" > "${DUALAUTH_VERSION_FILE}"
+    log "DualAuth Agent: updated to ${latest_tag}"
+    return 0
+  fi
+
+  rm -f "${target}.tmp"
+  log "DualAuth Agent: update failed (will use existing)"
+  return 1
+}
+
+if is_true "${DUALAUTH_AGENT_AUTO_UPDATE}" && is_true "${HYTALE_DUAL_AUTH:-true}"; then
+  update_dualauth_agent || true
+fi
+
+# Prefer auto-updated copy in data volume, fallback to image built-in
+DUALAUTH_AGENT_JAR="${SERVER_DIR}/dualauth-agent.jar"
+if [ ! -f "${DUALAUTH_AGENT_JAR}" ]; then
+  DUALAUTH_AGENT_JAR="/opt/dualauth-agent/dualauth-agent.jar"
 fi
 if is_true "${HYTALE_DUAL_AUTH:-true}" && [ -f "${DUALAUTH_AGENT_JAR}" ]; then
   log "DualAuth Agent: enabled (runtime patching, original JAR untouched)"
