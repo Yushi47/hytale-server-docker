@@ -22,7 +22,7 @@ Both eggs support **F2P and official licensed clients** connecting to the same s
 ## Connecting Clients
 
 ### F2P Clients
-Connect directly using [Hytale F2P Launcher](https://github.com/amiayweb/Hytale-F2P).
+Connect directly using [F2P Evo](https://git.sanhost.net/sanasol/f2p-evo).
 
 ### Official Clients
 Server admin runs these commands in **server console**:

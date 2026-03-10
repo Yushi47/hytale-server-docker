@@ -154,7 +154,7 @@ services:
 By default, servers support **both** official Hytale clients and F2P clients simultaneously.
 
 ### F2P Clients
-Connect directly using [Hytale F2P Launcher](https://github.com/amiayweb/Hytale-F2P) - no additional setup needed.
+Connect directly using [F2P Evo](https://git.sanhost.net/sanasol/f2p-evo) - no additional setup needed.
 
 ### Official/Licensed Clients
 
@@ -254,7 +254,7 @@ Images are automatically built and pushed on:
 
 Test without setting up your own server:
 
-1. Download [Hytale F2P Launcher](https://github.com/amiayweb/Hytale-F2P/releases/tag/v2.0.2b)
+1. Download [F2P Evo](https://git.sanhost.net/sanasol/f2p-evo/releases/latest)
 2. Connect to: `ht.vboro.de:5720`
 
 Features:
@@ -269,7 +269,7 @@ Features:
 | Project | Description |
 |---------|-------------|
 | [hytale-auth-server](https://github.com/sanasol/hytale-auth-server) | F2P Authentication server |
-| [Hytale F2P Launcher](https://github.com/amiayweb/Hytale-F2P) | Game launcher with F2P support |
+| [F2P Evo](https://git.sanhost.net/sanasol/f2p-evo) | Game launcher with F2P support |
 | [Server List](https://santale.top) | Hytale server listing |
 
 ---
